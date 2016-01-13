@@ -13,8 +13,8 @@
 (defn baz-macro [tag attrs body]
   (tag-map :foo attrs body))
 
-#_(def todos [{:subject "Get milk" :complete true}
-              {:subject "Finish library" :complete false}])
+(def todos [{:subject "Get milk" :complete true}
+            {:subject "Finish library" :complete false}])
 
 (def macros {:foo foo-macro
              :baz baz-macro})

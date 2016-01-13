@@ -31,22 +31,42 @@
           tag-name (keyword (name tag))]
       (if-let [macro (macros tag-name)]
         (let [new-tag (macro tag attrs body)]
-          (parse new-tag))
+          new-tag)
         tag-map))
+    tag-map))
+
+(defn expand-tag-all [macros tag-map]
+  (if (map? tag-map)
+    (let [new-tag (expand-tag macros tag-map)]
+      (if (identical? new-tag tag-map)
+        (let [new-body (map (partial expand-tag-all macros)
+                            (:body new-tag))]
+          (assoc new-tag :body new-body))
+        (expand-tag-all macros new-tag)))
     tag-map))
 
 (defn render [macros form ctx]
   (->> form
        parse
+       (expand-tag-all macros)
        unparse))
 
+(defn tag-map [tag attrs body]
+  {:tag tag
+   :attrs attrs
+   :body body})
+
 (defn foo-macro [tag attrs body]
-  (make-tag :bar attrs body))
+  (tag-map :bar attrs body))
+
+(defn baz-macro [tag attrs body]
+  (tag-map :foo attrs body))
 
 (def todos [{:subject "Get milk" :complete true}
-             {:subject "Finish library" :complete false}])
+            {:subject "Finish library" :complete false}])
 
-(def macros {:foo foo-macro})
+(def macros {:foo foo-macro
+             :baz baz-macro})
 
 (facts "About rendering"
        (fact "rendering nil returns nil"
@@ -103,4 +123,13 @@
         "foo" "foo"
         [:bar] [:bar]
         [:foo] [:bar]
-        [:foo [:foo]] [:bar [:foo]]))
+        [:foo [:foo]] [:bar [:foo]])
+       (tabular
+        (fact "We can expand a single tag"
+              (->> ?in parse (expand-tag-all macros) unparse) => ?out)
+        ?in ?out
+        nil nil
+        "foo" "foo"
+        [:baz] [:bar]
+        [:foo [:foo]] [:bar [:bar]]
+        [:foo [:baz]] [:bar [:bar]]))

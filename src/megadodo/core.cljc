@@ -6,9 +6,9 @@
   (match [unparsed]
          [([?c :guard symbol? ?b] :seq)] {:ctx ?c :body (parse ?b)}
          [[?k]] {:tag ?k}
-         [[?k ?a :guard map?]] {:tag ?k :attrs ?a}
+         [[?k ?a :guard map?]] {:tag ?k :attrs ?a :body nil}
          [([?k ?a :guard map? & ?b] :seq)] {:tag ?k :attrs ?a :body (map parse ?b)}
-         [([?k & ?b] :seq)] {:tag ?k :body (map parse ?b)}
+         [([?k & ?b] :seq)] {:tag ?k :attrs nil :body (map parse ?b)}
          :else unparsed))
 
 (defn make-tag [tag attrs body]
@@ -68,8 +68,12 @@
                                   (map bind-fn ctx)
                                   (bind-fn ctx)))
          [?s :guard sequential?] (map (partial bind-data data) ?s)
-         [{:body ?b}] (-> tag
-                          (assoc :body (bind-data data ?b)))
+         [{:body ?b :attrs ?a}] (-> tag
+                                    (assoc :body (bind-data data ?b))
+                                    (assoc :attrs (clojure.walk/postwalk (fn [s]
+                                                                           (if (symbol? s)
+                                                                             (lookup s data)
+                                                                             s)) ?a)))
          [?s :guard symbol?] (lookup ?s data)
          :else tag))
 

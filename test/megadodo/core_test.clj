@@ -27,10 +27,10 @@
         ?unparsed                   ?parsed
         "foo"                       "foo"
         [:foo]                      {:tag :foo}
-        [:foo {:a :b}]              {:tag :foo :attrs {:a :b}}
-        [:foo {:a :b}]              {:tag :foo :attrs {:a :b}}
-        [:foo [:bar]]               {:tag :foo :body [{:tag :bar}]}
-        [:foo [:bar] "baz"]         {:tag :foo :body [{:tag :bar} "baz"]}
+        [:foo {:a :b}]              {:tag :foo :attrs {:a :b} :body nil}
+        [:foo {:a :b}]              {:tag :foo :attrs {:a :b} :body nil}
+        [:foo [:bar]]               {:tag :foo :attrs nil :body [{:tag :bar}]}
+        [:foo [:bar] "baz"]         {:tag :foo :attrs nil :body [{:tag :bar} "baz"]}
         [:foo {:a :b} [:bar] "baz"] {:tag :foo :attrs {:a :b} :body [{:tag :bar} "baz"]}
         '(a [:foo])                 {:ctx 'a :body {:tag :foo}})
        (tabular
@@ -94,7 +94,8 @@
         '[:tag k/j]     [:tag "m"]
         '[:tag n/o.p]   [:tag "q"]
         '[:tag r.s/t]   [:tag "u"]
-        '[:tag (d [:tag e])] [:tag [:tag "f"]]))
+        '[:tag (d [:tag e])] [:tag [:tag "f"]]
+        [:tag {:a 'a}]  [:tag {:a "b"}]))
 
 (facts "About rendering"
        (fact "rendering nil returns nil"

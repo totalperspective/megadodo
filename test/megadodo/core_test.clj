@@ -3,10 +3,15 @@
             [midje.sweet :refer :all]
             [clojure.core.match :refer [match]]))
 
-(defn tag-map [tag attrs body]
-  {:tag tag
-   :attrs attrs
-   :body body})
+(defn tag-map
+  ([tag]
+   (tag-map tag nil))
+  ([tag attrs]
+   (tag-map tag attrs nil))
+  ([tag attrs body]
+   {:tag tag
+    :attrs attrs
+    :body body}))
 
 (defn foo-macro [tag attrs body]
   (tag-map :bar attrs body))
@@ -14,11 +19,25 @@
 (defn baz-macro [tag attrs body]
   (tag-map :foo attrs body))
 
+(def macros {:foo foo-macro
+             :baz baz-macro})
+
 (def todos [{:subject "Get milk" :complete true}
             {:subject "Finish library" :complete false}])
 
-(def macros {:foo foo-macro
-             :baz baz-macro})
+(defn template [form]
+  (fn [tag attrs body]
+    (parse form)))
+
+(def todo-macros {:todos (template '[:ul (. [:item])])
+                  :item (template '[:li {:class (complete "complete" nil)} subject])
+                  :image (template '[:img {:src $body}])})
+
+(comment
+  (prn (render todo-macros '(. [:todos]
+                               "NO todos")
+               todos))
+  (prn (render todo-macros '[:image "/path/to/img"] todos)))
 
 (facts "About tag parsing"
        (tabular
@@ -26,24 +45,27 @@
               (parse ?unparsed) => ?parsed)
         ?unparsed                   ?parsed
         "foo"                       "foo"
-        [:foo]                      {:tag :foo}
+        [:foo]                      {:tag :foo :attrs nil :body nil}
         [:foo {:a :b}]              {:tag :foo :attrs {:a :b} :body nil}
         [:foo {:a :b}]              {:tag :foo :attrs {:a :b} :body nil}
-        [:foo [:bar]]               {:tag :foo :attrs nil :body [{:tag :bar}]}
-        [:foo [:bar] "baz"]         {:tag :foo :attrs nil :body [{:tag :bar} "baz"]}
-        [:foo {:a :b} [:bar] "baz"] {:tag :foo :attrs {:a :b} :body [{:tag :bar} "baz"]}
-        '(a [:foo])                 {:ctx 'a :body {:tag :foo}})
+        [:foo [:bar]]               {:tag :foo :attrs nil :body [(tag-map :bar)]}
+        [:foo [:bar] "baz"]         {:tag :foo :attrs nil :body [(tag-map :bar) "baz"]}
+        [:foo {:a :b} [:bar] "baz"] {:tag :foo :attrs {:a :b} :body [(tag-map :bar) "baz"]}
+        '(a [:foo])                 {:ctx 'a :body (tag-map :foo) :else false}
+        '(a [:foo] [:bar])          {:ctx 'a :body (tag-map :foo) :else (tag-map :bar)})
        (tabular
         (fact "We can unparse a tag"
               (unparse ?parsed) => ?unparsed)
         ?unparsed                   ?parsed
         "foo"                       "foo"
-        [:foo]                      {:tag :foo}
-        [:foo {:a :b}]              {:tag :foo :attrs {:a :b}}
-        [:foo {:a :b}]              {:tag :foo :attrs {:a :b}}
-        [:foo [:bar] "baz"]         {:tag :foo :body [{:tag :bar} "baz"]}
-        [:foo {:a :b} [:bar] "baz"] {:tag :foo :attrs {:a :b} :body [{:tag :bar} "baz"]}
-        [:foo "bar" "baz"]          {:tag :foo :body [["bar" "baz"]]}))
+        [:foo]                      {:tag :foo :attrs nil :body nil}
+        [:foo {:a :b}]              {:tag :foo :attrs {:a :b} :body nil}
+        [:foo {:a :b}]              {:tag :foo :attrs {:a :b} :body nil}
+        [:foo [:bar] "baz"]         {:tag :foo :attrs nil :body [(tag-map :bar) "baz"]}
+        [:foo {:a :b} [:bar] "baz"] {:tag :foo :attrs {:a :b} :body [(tag-map :bar) "baz"]}
+        [:foo "bar" "baz"]          {:tag :foo :attrs nil :body [["bar" "baz"]]}
+        '(a [:foo])                 {:ctx 'a :body (tag-map :foo) :else nil}
+        '(a [:foo] [:bar])          {:ctx 'a :body (tag-map :foo) :else (tag-map :bar)}))
 
 (facts "About macro expansion"
        (tabular
@@ -56,14 +78,15 @@
         [:foo] [:bar]
         [:foo [:foo]] [:bar [:foo]])
        (tabular
-        (fact "We can expand a single tag"
+        (fact "We can expand a recursively"
               (->> ?in parse (expand-tag-all macros) unparse) => ?out)
         ?in ?out
         nil nil
         "foo" "foo"
         [:baz] [:bar]
         [:foo [:foo]] [:bar [:bar]]
-        [:foo [:baz]] [:bar [:bar]]))
+        [:foo [:baz]] [:bar [:bar]]
+        '(. [:foo])   '(. [:bar])))
 
 (facts "About data binding"
        (tabular
@@ -91,6 +114,7 @@
         '(d [:tag e])   [:tag "f"]
         '(g [:tag h.i]) [:tag "j"]
         '(g.h [:tag i]) [:tag "j"]
+        '(z [:foo] [:bar]) [:bar]
         '[:tag k/j]     [:tag "m"]
         '[:tag n/o.p]   [:tag "q"]
         '[:tag r.s/t]   [:tag "u"]

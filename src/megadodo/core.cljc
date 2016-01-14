@@ -87,27 +87,28 @@
                                      (map bind-fn ctx)
                                      (bind-fn ctx)))
    [?s :guard sequential?] (map (partial bind-data data) ?s)
-   [{:body ?b :attrs ?a}] (let [data (if (map? data)
-                                       data
-                                       (with-meta {} {:data data}))
-                                data (if-let [args (:args tag)]
-                                       (->> args
-                                            (map-indexed (fn [i a]
-                                                           (let [k (keyword (str "$" i))
-                                                                 v (lookup a data)]
-                                                             [k v])))
-                                            (into {})
-                                            (merge data))
-                                       data)]
-                            (-> tag
-                                (assoc :body (bind-data data ?b))
-                                (assoc :attrs (clojure.walk/prewalk (fn [s]
-                                                                      (cond
-                                                                        (symbol? s) (lookup s data)
-                                                                        (list? s) (let [p (parse s)]
-                                                                                    (bind-data data p))
-                                                                        :else s))
-                                                                    ?a))))
+   [{:tag ?t :body ?b :attrs ?a}] (let [data (if (map? data)
+                                               data
+                                               (with-meta {} {:data data}))
+                                        data (if-let [args (:args tag)]
+                                               (let [arg-map (->> args
+                                                                  (map-indexed (fn [i a]
+                                                                                 (let [k (keyword (str "$" i))
+                                                                                       v (lookup a data)]
+                                                                                   [k v])))
+                                                                  (into {}))]
+                                                 (merge data (assoc arg-map :$. args)))
+                                               data)
+                                        new-body (bind-data data ?b)]
+                                    (-> tag
+                                        (assoc :body new-body)
+                                        (assoc :attrs (clojure.walk/prewalk (fn [s]
+                                                                              (cond
+                                                                                (symbol? s) (lookup s data)
+                                                                                (list? s) (let [p (parse s)]
+                                                                                            (bind-data data p))
+                                                                                :else s))
+                                                                            ?a))))
    [?s :guard symbol?] (lookup ?s data)
    :else tag))
 
@@ -116,7 +117,11 @@
     (fn [tag attrs body]
       (-> parsed
           (update :attrs merge attrs)
-          (assoc :args body)))))
+          (assoc :args (map parse body))))))
+
+(defn trace [x]
+  #_(clojure.pprint/pprint x)
+  x)
 
 (defn render [macros form ctx]
   (let [macros (->> macros
@@ -126,7 +131,11 @@
                              [k (template m)])))
                     (into {}))]
     (->> form
+         trace
          parse
+         trace
          (expand-tag-all macros)
+         trace
          (bind-data ctx)
+         trace
          unparse)))

@@ -4,6 +4,7 @@
 
 (defn parse [unparsed]
   (match [unparsed]
+         [([?c :guard symbol? ?b] :seq)] {:ctx ?c :body (parse ?b)}
          [[?k]] {:tag ?k}
          [[?k ?a :guard map?]] {:tag ?k :attrs ?a}
          [([?k ?a :guard map? & ?b] :seq)] {:tag ?k :attrs ?a :body (map parse ?b)}
@@ -18,11 +19,16 @@
        (into [])))
 
 (defn unparse [parsed]
-  (if (map? parsed)
-    (let [{:keys [tag attrs body]} parsed
-          body (map unparse body)]
-      (make-tag tag attrs body))
-    parsed))
+  (cond
+    (string? parsed) parsed
+    (map? parsed) (let [{:keys [tag attrs body]} parsed
+                        body (unparse body)]
+                    (make-tag tag attrs body))
+    (sequential? parsed) (if (and (= 1 (count parsed))
+                                  (sequential? (first parsed)))
+                           (map unparse (first parsed))
+                           (map unparse parsed))
+    :else parsed))
 
 (defn expand-tag [macros tag-map]
   (if (and (map? macros) (map? tag-map))
@@ -44,8 +50,32 @@
         (expand-tag-all macros new-tag)))
     tag-map))
 
+(defn sym->path [sym]
+  (map keyword (clojure.string/split (str sym) #"\.")) )
+
+(defn lookup [ctx data]
+  (if (symbol? ctx)
+    (if (= '. ctx)
+      data
+      (get-in data (sym->path ctx)))
+    ctx))
+
+(defn bind-data [data tag]
+  (match [tag]
+         [{:ctx ?c :body ?b}] (let [ctx (lookup ?c data)
+                                    bind-fn #(bind-data % ?b)]
+                                (if (sequential? ctx)
+                                  (map bind-fn ctx)
+                                  (bind-fn ctx)))
+         [?s :guard sequential?] (map (partial bind-data data) ?s)
+         [{:body ?b}] (-> tag
+                          (assoc :body (bind-data data ?b)))
+         [?s :guard symbol?] (lookup ?s data)
+         :else tag))
+
 (defn render [macros form ctx]
   (->> form
        parse
        (expand-tag-all macros)
+       (bind-data ctx)
        unparse))

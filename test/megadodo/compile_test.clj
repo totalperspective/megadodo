@@ -17,7 +17,7 @@
              {:list [:div {:data-md-macro-list ""}
                      [:ul
                       [:li "Hello"]]]})
-       (fact "A form with a nexted macros will separate them"
+       (fact "A form with a nested macros will separate them"
              (macros [:div {:data-md-macro-list ""}
                       [:ul
                        [:li {:data-md-macro-list-item ""} "Hello"]]])
@@ -35,12 +35,12 @@
        (fact "Attributes can refer to names for their value"
              (macros [:div {:data-md-macro-list ""}
                       [:ul {:display "block"
-                            :data-md-attr-visible "(visible \"block\" \"none\")"}
+                            :data-md-attr-display "(visible \"block\" \"none\")"}
                        [:li "Hello"]]])
              =>
              '{:list [:div {:data-md-macro-list ""}
                       [:ul {:display (visible "block" "none")
-                            :data-md-attr-visible "(visible \"block\" \"none\")"}
+                            :data-md-attr-display "(visible \"block\" \"none\")"}
                        [:li "Hello"]]]})
        (fact "A tag in a macro can refer to a name for it's context"
              (macros [:div {:data-md-macro-list ""}
@@ -65,7 +65,8 @@
              {:list '[:div {:data-md-macro-list ""}
                       [:ul
                        (. [:list-item])]]
-              :list-item '[:li {:data-md-ctx "."
+              :list-item '[:li {:data-md-macro-list-item ""
+                                :data-md-ctx "."
                                 :data-md-body "subject"}
                            subject]})
        (fact "Macros can have an argument"
@@ -84,7 +85,7 @@
              (macros '[:div.modal {:data-md-macro-modal ""
                                    :data-md-args "$buttons $main"}
                        [:div.main {:data-md-body "$main"} [...]]
-                       [:div.buttons {:data-md-body "$buttons"}] [...]])
+                       [:div.buttons {:data-md-body "$buttons"} [...]]])
              =>
              '{:modal [:div.modal {:data-md-macro-modal ""
                                    :data-md-args "$buttons $main"}

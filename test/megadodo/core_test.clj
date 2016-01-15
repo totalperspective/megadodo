@@ -22,22 +22,17 @@
 (def macros {:foo foo-macro
              :baz baz-macro})
 
-(def todos [{:subject "Get milk" :complete true}
+(def todos [{:subject "Get milk" :complete true :img "avatar.jpg"}
             {:subject "Finish library" :complete false}])
 
-(defn template [form]
-  (fn [tag attrs body]
-    (parse form)))
-
-(def todo-macros {:todos (template '[:ul (. [:item])])
-                  :item (template '[:li {:class (complete "complete" nil)} subject])
-                  :image (template '[:img {:src $body}])})
-
-(comment
-  (prn (render todo-macros '(. [:todos]
-                               "NO todos")
-               todos))
-  (prn (render todo-macros '[:image "/path/to/img"] todos)))
+(def todo-macros {:v '[:div.vertical ($. [:div.row .])]
+                  :todo '[:v [:header] [:todo-list {:class "todos"} $0] [:footer]]
+                  :todo-list '[:ul ($0 [:todo-item])]
+                  :todo-item '[:li {:class (complete "complete" nil)}
+                               (img [:profile .]
+                                    [:profile "none.jpg"])
+                               subject]
+                  :profile '[:img {:class "profile" :src $0}]})
 
 (facts "About tag parsing"
        (tabular
@@ -142,4 +137,16 @@
         ?in    ?out
         [:foo] [:bar]
         [:foo {:a :b}] [:bar {:a :b}]
-        [:foo [:foo {:a :b}]] [:bar [:bar {:a :b}]]))
+        [:foo [:foo {:a :b}]] [:bar [:bar {:a :b}]])
+       #_(fact "We can put it all together"
+             (render todo-macros
+                     '[:todo todos]
+                     {:todos todos})
+             =>
+             [:div.vertical
+              [:div.row [:header]]
+              [:div.row
+               [:ul {:class "top"}
+                [:li {:class "complete"} [:img {:class "profile", :src "avatar.jpg"}] "Get milk"]
+                [:li {:class nil} [:img {:class "profile" :src "none.jpg"}] "Finish library"]]]
+              [:div.row [:footer]]]))

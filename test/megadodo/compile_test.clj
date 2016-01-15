@@ -72,22 +72,22 @@
        (fact "Macros can have an argument"
              (macros [:img {:class "profile"
                             :src "avatar.jpg"
-                            :data-md-args "$src"
+                            :data-md-args "[$src]"
                             :data-md-macro-profile "profile"
                             :data-md-attr-src "$src"}])
              =>
              '{:profile [:img {:class "profile"
                                :src $0
-                               :data-md-args "$src"
-                               :data-macro-profile "profile"
+                               :data-md-args "[$src]"
+                               :data-md-macro-profile "profile"
                                :data-md-attr-src "$src"}]})
        (fact "Macros can have more than one argument"
              (macros '[:div.modal {:data-md-macro-modal ""
-                                   :data-md-args "$buttons $main"}
+                                   :data-md-args "[$buttons $main]"}
                        [:div.main {:data-md-body "$main"} [...]]
                        [:div.buttons {:data-md-body "$buttons"} [...]]])
              =>
              '{:modal [:div.modal {:data-md-macro-modal ""
-                                   :data-md-args "$buttons $main"}
+                                   :data-md-args "[$buttons $main]"}
                        [:div.main {:data-md-body "$main"} $1]
                        [:div.buttons {:data-md-body "$buttons"}] $0]}))

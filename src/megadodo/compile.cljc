@@ -15,10 +15,25 @@
       [:macro (keyword macro)]
       [(keyword n) (read-string v)])))
 
+(defn resolve-args [md-data]
+  (let [args (:args md-data)]
+    (if args
+      (let [arg-map (into {}
+                          (map-indexed (fn [i a]
+                                         [a (symbol (str "$" i))])
+                                       args))]
+        (clojure.walk/postwalk (fn [x]
+                                 (if (symbol? x)
+                                   (get arg-map x x)
+                                   x))
+                               md-data))
+      md-data)))
+
 (defn md-data [attrs]
   (->> attrs
        (keep md-data-name)
-       (into {})))
+       (into {})
+       resolve-args))
 
 (defn clean-tag [t a b]
   (let [b (if (seq? b) b [b])]

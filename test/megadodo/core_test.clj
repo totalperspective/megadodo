@@ -138,7 +138,7 @@
         [:foo] [:bar]
         [:foo {:a :b}] [:bar {:a :b}]
         [:foo [:foo {:a :b}]] [:bar [:bar {:a :b}]])
-       (fact "We can put it all together"
+       #_(fact "We can put it all together"
              (render todo-macros
                      '[:todo todos]
                      {:todos todos})

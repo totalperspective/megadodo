@@ -2887,10 +2887,14 @@ like properties.</p>
   (m/predc x symbol? (fn [c v r a]
                        `(~'symbol ~(m/walk* r (m/walk* a x))))))</pre></td></tr><tr><td class="docs"><h2>Forms</h2>
 </td><td class="codes"></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(declare tago contexto)</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(declare hiccupo)</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn hiccup [form]
+  (first (m/run 1 [q]
+           (m/fresh [type args]
+             (hiccupo form type args)))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn hiccup? [form]
-  (pos? (count (m/run 1 [q]
-                 (hiccupo form)))))</pre></td></tr><tr><td class="docs"><p>Valid megadodo hiccup form is made up of either:</p>
+  (not (nil? (hiccup form))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(declare tago contexto)</pre></td></tr><tr><td class="docs"><p>Valid megadodo hiccup form is made up of either:</p>
 
 <ul>
 <li>a string</li>
@@ -2898,12 +2902,20 @@ like properties.</p>
 <li>a tag</li>
 <li>a context</li>
 </ul>
-</td><td class="codes"><pre class="brush: clojure">(defn hiccupo [f]
-  (m/conde
-   [(stringo f)]
-   [(symbolo f)]
-   [(tago f)]
-   [(contexto f)]))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn hiccupo [f parse]
+  (m/fresh [type args]
+    (m/== [type args] parse)
+    (m/conde
+     [(stringo f) (m/== type :string) (m/== args f)]
+     [(symbolo f) (m/== type :symbol) (m/== args f)]
+     [(m/fresh [t a b]
+        (tago f t a b)
+        (m/== type :tag)
+        (m/== args [t a b]))]
+     [(m/fresh [s c a]
+        (contexto f s c a)
+        (m/== type :context)
+        (m/== args [s c a]))])))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(declare bodyo attro)</pre></td></tr><tr><td class="docs"><p>A tag is normally a list/vector of tag name, attribute map and/or body and can take
 any of the forms:</p>
 
@@ -2913,38 +2925,40 @@ any of the forms:</p>
 <li><code>[tag-name &amp; body]</code></li>
 <li><code>[tag-name attrs &amp; body]</code></li>
 </ul>
-</td><td class="codes"><pre class="brush: clojure">(defn tago [f]
-  (m/fresh [t r]
+</td><td class="codes"><pre class="brush: clojure">(defn tago [f t a b]
+  (m/fresh [r]
     (m/conso t r f)
     (keywordo t)
     (m/conde
-     [(bodyo r)]
-     [(m/fresh [a b]
-        (m/conso a b r)
+     [(bodyo r b) (m/== a nil)]
+     [(m/fresh [rr]
+        (m/conso a rr r)
         (attro a)
-        (bodyo b))])))</pre></td></tr><tr><td class="docs"><p>Attributes are repesented as maps</p>
+        (bodyo rr b))])))</pre></td></tr><tr><td class="docs"><p>Attributes are repesented as maps</p>
 </td><td class="codes"><pre class="brush: clojure">(defn attro [a]
   (mapo a))</pre></td></tr><tr><td class="docs"><p>And the body can be empty or any number of valid forms.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn bodyo [b]
+</td><td class="codes"><pre class="brush: clojure">(defn bodyo [f b]
   (m/conde
-   [(m/emptyo b)]
-   [(m/fresh [h t]
-      (m/conso h t b)
-      (hiccupo h)
-      (bodyo t))]))</pre></td></tr><tr><td class="docs"><p>In megadodo hiccup we ad an additional concept of a context.
+   [(m/emptyo f) (m/== b nil)]
+   [(m/fresh [f-h f-t b-h b-t]
+      (m/conso f-h f-t f)
+      (m/conso b-h b-t b)
+      (hiccupo f-h b-h)
+      (bodyo f-t b-t))]))</pre></td></tr><tr><td class="docs"><p>In megadodo hiccup we ad an additional concept of a context.
 This represents some data passed to the form to be rendered.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn contexto [f]
-  (m/fresh [sym cons-ante cons ante* ante]
-    (m/conso sym cons-ante f)
+</td><td class="codes"><pre class="brush: clojure">(defn contexto [f sym cons ante]
+  (m/fresh [f-t]
+    (m/conso sym f-t f)
     (symbolo sym)
-    (m/conso cons ante* cons-ante)
-    (hiccupo cons)
-    (m/conde
-     [(m/emptyo ante*)]
-     [(m/fresh [r]
-        (m/conso ante r ante*)
-        (m/emptyo r)
-        (hiccupo ante))])))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#megadodo.interpret" name="megadodo.interpret"><h1 class="project-name">megadodo.interpret</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+    (m/fresh [f-t-h f-t-t]
+      (m/conso f-t-h f-t-t f-t)
+      (hiccupo f-t-h cons)
+      (m/conde
+       [(m/emptyo f-t-t) (m/== nil ante)]
+       [(m/fresh [f-t-t-h f-t-t-t]
+          (m/conso f-t-t-h f-t-t-t f-t-t)
+          (m/emptyo f-t-t-t)
+          (hiccupo f-t-t-h ante))]))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#megadodo.interpret" name="megadodo.interpret"><h1 class="project-name">megadodo.interpret</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(ns megadodo.interpret
   (:refer-clojure :exclude [eval])
   (:require [clojure.core.match :refer [match]]))</pre></td></tr><tr><td class="docs">

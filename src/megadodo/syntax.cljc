@@ -30,11 +30,17 @@
 
 ;; ## Forms
 
-(declare tago contexto)
+(declare hiccupo)
+
+(defn hiccup [form]
+  (first (m/run 1 [q]
+           (m/fresh [type args]
+             (hiccupo form type args)))))
 
 (defn hiccup? [form]
-  (pos? (count (m/run 1 [q]
-                 (hiccupo form)))))
+  (not (nil? (hiccup form))))
+
+(declare tago contexto)
 
 ;; Valid megadodo hiccup form is made up of either:
 ;;
@@ -42,12 +48,20 @@
 ;; - a symbol
 ;; - a tag
 ;; - a context
-(defn hiccupo [f]
-  (m/conde
-   [(stringo f)]
-   [(symbolo f)]
-   [(tago f)]
-   [(contexto f)]))
+(defn hiccupo [f parse]
+  (m/fresh [type args]
+    (m/== [type args] parse)
+    (m/conde
+     [(stringo f) (m/== type :string) (m/== args f)]
+     [(symbolo f) (m/== type :symbol) (m/== args f)]
+     [(m/fresh [t a b]
+        (tago f t a b)
+        (m/== type :tag)
+        (m/== args [t a b]))]
+     [(m/fresh [s c a]
+        (contexto f s c a)
+        (m/== type :context)
+        (m/== args [s c a]))])))
 
 (declare bodyo attro)
 
@@ -58,41 +72,43 @@
 ;; - `[tag-name attrs]`
 ;; - `[tag-name & body]`
 ;; - `[tag-name attrs & body]`
-(defn tago [f]
-  (m/fresh [t r]
+(defn tago [f t a b]
+  (m/fresh [r]
     (m/conso t r f)
     (keywordo t)
     (m/conde
-     [(bodyo r)]
-     [(m/fresh [a b]
-        (m/conso a b r)
+     [(bodyo r b) (m/== a nil)]
+     [(m/fresh [rr]
+        (m/conso a rr r)
         (attro a)
-        (bodyo b))])))
+        (bodyo rr b))])))
 
 ;; Attributes are repesented as maps
 (defn attro [a]
   (mapo a))
 
 ;; And the body can be empty or any number of valid forms.
-(defn bodyo [b]
+(defn bodyo [f b]
   (m/conde
-   [(m/emptyo b)]
-   [(m/fresh [h t]
-      (m/conso h t b)
-      (hiccupo h)
-      (bodyo t))]))
+   [(m/emptyo f) (m/== b nil)]
+   [(m/fresh [f-h f-t b-h b-t]
+      (m/conso f-h f-t f)
+      (m/conso b-h b-t b)
+      (hiccupo f-h b-h)
+      (bodyo f-t b-t))]))
 
 ;; In megadodo hiccup we ad an additional concept of a context.
 ;; This represents some data passed to the form to be rendered.
-(defn contexto [f]
-  (m/fresh [sym cons-ante cons ante* ante]
-    (m/conso sym cons-ante f)
+(defn contexto [f sym cons ante]
+  (m/fresh [f-t]
+    (m/conso sym f-t f)
     (symbolo sym)
-    (m/conso cons ante* cons-ante)
-    (hiccupo cons)
-    (m/conde
-     [(m/emptyo ante*)]
-     [(m/fresh [r]
-        (m/conso ante r ante*)
-        (m/emptyo r)
-        (hiccupo ante))])))
+    (m/fresh [f-t-h f-t-t]
+      (m/conso f-t-h f-t-t f-t)
+      (hiccupo f-t-h cons)
+      (m/conde
+       [(m/emptyo f-t-t) (m/== nil ante)]
+       [(m/fresh [f-t-t-h f-t-t-t]
+          (m/conso f-t-t-h f-t-t-t f-t-t)
+          (m/emptyo f-t-t-t)
+          (hiccupo f-t-t-h ante))]))))

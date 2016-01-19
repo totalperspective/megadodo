@@ -1,4 +1,4 @@
-(defproject totalperspective/megadodo "0.1.0"
+(defproject totalperspective/megadodo "0.2.0"
   :description "Mustache and macros for hiccup style markup"
   :url "https://github.com/totalperspective/megadodo"
   :license {:name "Eclipse Public License"

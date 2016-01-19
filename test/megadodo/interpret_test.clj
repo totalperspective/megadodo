@@ -9,10 +9,10 @@
 (def todo-macros {:v '[:div.vertical ($$ [:div.row $.])]
                   :todo '[:v [:header] [:todo-list $0] [:footer]]
                   :todo-list '[:ul {:class "todos"} ($0 [:todo-item .])]
-                  :todo-item '($0 [:li {:class (complete "complete" nil)}
-                                   (img [:profile .]
-                                        [:profile "none.jpg"])
-                                   subject])
+                  :todo-item '[:li {:class (complete "complete" nil)}
+                               (img [:profile .]
+                                    [:profile "none.jpg"])
+                               subject]
                   :profile '[:img {:class "profile" :src $0}]})
 
 (facts "About evaluation"

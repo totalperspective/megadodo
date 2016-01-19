@@ -2872,7 +2872,8 @@ net.brehaut.ClojureTools = (function (SH) {
 traditional hiccup with a couple of differences to add some mustache
 like properties.</p>
 </td><td class="codes"><pre class="brush: clojure">(ns megadodo.syntax
-  (:require [clojure.core.logic :as m]))</pre></td></tr><tr><td class="docs"><p>Hiccup uses keywords for tag names</p>
+  (:require [clojure.core.logic :as m]))</pre></td></tr><tr><td class="docs"><h2>Primatives</h2>
+</td><td class="codes"></td></tr><tr><td class="docs"><p>Hiccup uses keywords for tag names</p>
 </td><td class="codes"><pre class="brush: clojure">(defn keywordo [x]
   (m/predc x keyword? (fn [c v r a]
                         `(~'keyword ~(m/walk* r (m/walk* a x))))))</pre></td></tr><tr><td class="docs"><p>Maps for attributes</p>
@@ -2881,10 +2882,11 @@ like properties.</p>
                     `(~'map ~(m/walk* r (m/walk* a x))))))</pre></td></tr><tr><td class="docs"><p>And obviously strings for text</p>
 </td><td class="codes"><pre class="brush: clojure">(defn stringo [x]
   (m/predc x string? (fn [c v r a]
-                       `(~'string ~(m/walk* r (m/walk* a x))))))</pre></td></tr><tr><td class="docs"><p>Megadodo additional has symbols to represent context</p>
+                       `(~'string ~(m/walk* r (m/walk* a x))))))</pre></td></tr><tr><td class="docs"><p>Megadodo additionally has symbols to represent context</p>
 </td><td class="codes"><pre class="brush: clojure">(defn symbolo [x]
   (m/predc x symbol? (fn [c v r a]
-                       `(~'symbol ~(m/walk* r (m/walk* a x))))))</pre></td></tr><tr><td class="docs">
+                       `(~'symbol ~(m/walk* r (m/walk* a x))))))</pre></td></tr><tr><td class="docs"><h2>Forms</h2>
+</td><td class="codes"></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(declare tago contexto)</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn hiccup? [form]
   (pos? (count (m/run 1 [q]
@@ -2902,7 +2904,7 @@ like properties.</p>
    [(symbolo f)]
    [(tago f)]
    [(contexto f)]))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(declare bodyo attro)</pre></td></tr><tr><td class="docs"><p>A tag is normally a list of tag, attribute and/or body and can take
+</td><td class="codes"><pre class="brush: clojure">(declare bodyo attro)</pre></td></tr><tr><td class="docs"><p>A tag is normally a list/vector of tag name, attribute map and/or body and can take
 any of the forms:</p>
 
 <ul>

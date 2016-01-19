@@ -6,6 +6,8 @@
 (ns megadodo.syntax
   (:require [clojure.core.logic :as m]))
 
+;; ## Primatives
+
 ;; Hiccup uses keywords for tag names
 (defn keywordo [x]
   (m/predc x keyword? (fn [c v r a]
@@ -21,10 +23,12 @@
   (m/predc x string? (fn [c v r a]
                        `(~'string ~(m/walk* r (m/walk* a x))))))
 
-;; Megadodo additional has symbols to represent context
+;; Megadodo additionally has symbols to represent context
 (defn symbolo [x]
   (m/predc x symbol? (fn [c v r a]
                        `(~'symbol ~(m/walk* r (m/walk* a x))))))
+
+;; ## Forms
 
 (declare tago contexto)
 
@@ -47,7 +51,7 @@
 
 (declare bodyo attro)
 
-;; A tag is normally a list of tag, attribute and/or body and can take
+;; A tag is normally a list/vector of tag name, attribute map and/or body and can take
 ;; any of the forms:
 ;;
 ;; - `[tag-name]`

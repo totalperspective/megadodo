@@ -15,19 +15,25 @@
       [:macro (keyword macro)]
       [(keyword n) (read-string v)])))
 
+(defn arg-list->map [args]
+  (->> args
+       (map-indexed (fn [i a]
+                        [a (symbol (str "$" i))]))
+       (into {})))
+
+(defn replace-args [arg-map data]
+  (clojure.walk/postwalk (fn [x]
+                           (if (symbol? x)
+                             (get arg-map x x)
+                             x))
+                         data))
+
 (defn resolve-args [md-data]
-  (let [args (:args md-data)]
-    (if args
-      (let [arg-map (into {}
-                          (map-indexed (fn [i a]
-                                         [a (symbol (str "$" i))])
-                                       args))]
-        (clojure.walk/postwalk (fn [x]
-                                 (if (symbol? x)
-                                   (get arg-map x x)
-                                   x))
-                               md-data))
-      md-data)))
+  (if-let [args (:args md-data)]
+    (let [arg-map (arg-list->map args)
+          new-md-data (replace-args arg-map md-data)]
+      (assoc new-md-data :args arg-map))
+    md-data))
 
 (defn md-data [attrs]
   (->> attrs
@@ -128,10 +134,21 @@
               [m (inline-macro form)]))
        (into {})))
 
+(defn apply-args [macros]
+  (->> macros
+       (map (fn [[m form]]
+              (let [[_ attrs] form
+                    md-data (md-data attrs)
+                    new-form (replace-args (:args md-data)
+                                           form)]
+                [m new-form])))
+       (into {})))
+
 (defn macros [form]
   (-> form
       apply-md-body
       apply-md-attrs
       apply-md-ctx
       extract-macros
-      inline-macros))
+      inline-macros
+      apply-args))

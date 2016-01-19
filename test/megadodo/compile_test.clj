@@ -90,4 +90,4 @@
              '{:modal [:div.modal {:data-md-macro-modal ""
                                    :data-md-args "[$buttons $main]"}
                        [:div.main {:data-md-body "$main"} $1]
-                       [:div.buttons {:data-md-body "$buttons"}] $0]}))
+                       [:div.buttons {:data-md-body "$buttons"} $0]]}))

@@ -2885,7 +2885,10 @@ like properties.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn symbolo [x]
   (m/predc x symbol? (fn [c v r a]
                        `(~'symbol ~(m/walk* r (m/walk* a x))))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(declare tago contexto)</pre></td></tr><tr><td class="docs"><p>Valid megadodo hiccup form is made up of either:</p>
+</td><td class="codes"><pre class="brush: clojure">(declare tago contexto)</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn hiccup? [form]
+  (pos? (count (m/run 1 [q]
+                 (hiccupo form)))))</pre></td></tr><tr><td class="docs"><p>Valid megadodo hiccup form is made up of either:</p>
 
 <ul>
 <li>a string</li>

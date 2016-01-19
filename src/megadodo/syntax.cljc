@@ -28,6 +28,10 @@
 
 (declare tago contexto)
 
+(defn hiccup? [form]
+  (pos? (count (m/run 1 [q]
+                 (hiccupo form)))))
+
 ;; Valid megadodo hiccup form is made up of either:
 ;;
 ;; - a string

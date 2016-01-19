@@ -34,8 +34,8 @@
 
 (defn hiccup [form]
   (first (m/run 1 [q]
-           (m/fresh [type args]
-             (hiccupo form type args)))))
+           (m/fresh [parse]
+             (hiccupo form parse)))))
 
 (defn hiccup? [form]
   (not (nil? (hiccup form))))

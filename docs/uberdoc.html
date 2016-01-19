@@ -2890,8 +2890,8 @@ like properties.</p>
 </td><td class="codes"><pre class="brush: clojure">(declare hiccupo)</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn hiccup [form]
   (first (m/run 1 [q]
-           (m/fresh [type args]
-             (hiccupo form type args)))))</pre></td></tr><tr><td class="docs">
+           (m/fresh [parse]
+             (hiccupo form parse)))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn hiccup? [form]
   (not (nil? (hiccup form))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(declare tago contexto)</pre></td></tr><tr><td class="docs"><p>Valid megadodo hiccup form is made up of either:</p>

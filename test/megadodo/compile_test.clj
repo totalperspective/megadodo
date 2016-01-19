@@ -90,4 +90,34 @@
              '{:modal [:div.modal {:data-md-macro-modal ""
                                    :data-md-args "[$buttons $main]"}
                        [:div.main {:data-md-body "$main"} $1]
-                       [:div.buttons {:data-md-body "$buttons"} $0]]}))
+                       [:div.buttons {:data-md-body "$buttons"} $0]]})
+       (comment (fact "We can mix all the concepts together"
+                      (macros '[:div [:div.vertical {:data-md-macro-v ""}
+                                      [:div.row {:data-md-ctx "$$" :data-md-body "$."} [:div]]]
+                                [:v {:data-md-macro-todo ""}
+                                 [:header]
+                                 [:div.row
+                                  [:ul {:data-md-macro-todo-list "" :data-md-args "[$todos]" :class "todos"}
+                                   [:li {:class "complete" :data-md-macro-todo-item "" :data-md-ctx "$todos" :data-md-args "[$todo]"}
+                                    [:img {:class "profile", :src "avatar.jpg"}] "Get milk"]
+                                   [:li {:class nil} [:img {:class "profile" :src "none.jpg"}] "Finish library"]]]
+                                 [:footer]]])
+                      =>
+                      '{:v [:div.vertical {:data-md-macro-v ""}
+                            ($$ [:div.row {:data-md-ctx "$$" :data-md-body "$."} $.])]
+
+                        :todo [:v {:data-md-macro-todo ""}
+                               [:header]
+                               [:todo-list $0]
+                               [:footer]]
+
+                        :todo-list '[:ul
+                                     {:data-md-macro-todo-list "" :data-md-args "[$todos]" :class "todos"}
+                                     ($0 [:todo-item .])]
+
+                        :todo-item [:li {:class (complete "complete" nil)}
+                                    (img [:profile .]
+                                         [:profile "none.jpg"])
+                                    subject]
+
+                        :profile [:img {:class "profile" :src $0}]})))

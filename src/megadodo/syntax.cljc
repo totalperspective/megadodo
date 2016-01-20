@@ -32,13 +32,20 @@
 
 (declare hiccupo)
 
-(defn hiccup [form]
-  (first (m/run 1 [q]
-           (m/fresh [parse]
-             (hiccupo form parse)))))
+(defn parse [form]
+  (first (m/run 1 [parse]
+           (hiccupo form parse))))
 
-(defn hiccup? [form]
-  (not (nil? (hiccup form))))
+(defn unparse [parse]
+  (let [[form] (m/run 1 [form]
+                 (hiccupo form parse))]
+    (clojure.walk/prewalk (fn [x]
+                            (if (and (seq? x) (keyword? (first x)))
+                              (apply vector x)
+                              x)) form)))
+
+(defn valid-hiccup? [form]
+  (not (nil? (parse form))))
 
 (declare tago contexto)
 
@@ -49,22 +56,22 @@
 ;; - a tag
 ;; - a context
 (defn hiccupo [f parse]
-  (println :hiccupo)
   (m/fresh [type args]
+    (m/trace-lvars :hiccup f parse)
     (m/== [type args] parse)
     (m/conde
-     [(stringo f) (m/== type :string) (m/== args f)]
-     [(symbolo f) (m/== type :symbol) (m/== args f)]
      [(m/fresh [t a b]
         (m/== type :tag)
         (m/== args [t a b])
         (tago f t a b))]
+     [(stringo f) (m/== type :string) (m/== args f)]
+     [(symbolo f) (m/== type :symbol) (m/== args f)]
      #_[(m/fresh [s c a]
-        (contexto f s c a)
-        (m/== type :context)
-        (m/== args [s c a]))])))
+          (contexto f s c a)
+          (m/== type :context)
+          (m/== args [s c a]))])))
 
-(declare bodyo attro)
+(declare bodyo attrso)
 
 ;; A tag is normally a list/vector of tag name, attribute map and/or body and can take
 ;; any of the forms:
@@ -74,32 +81,35 @@
 ;; - `[tag-name & body]`
 ;; - `[tag-name attrs & body]`
 (defn tago [f t a b]
-  (println :tago)
   (m/fresh [r]
+    (m/trace-lvars :tag f t a b)
     (m/conso t r f)
     (keywordo t)
     (m/conde
+     [(m/== a nil) (m/emptyo r) (m/emptyo b)]
      [(m/== a nil) (bodyo r b)]
      [(m/fresh [rr]
         (m/conso a rr r)
-        (attro a)
+        (attrso a)
         (bodyo rr b))])))
 
 ;; Attributes are repesented as maps
-(defn attro [a]
-  (println :attro)
-  (mapo a))
+(defn attrso [a]
+  (m/all
+   (m/trace-lvars :attrs a)
+   (mapo a)))
 
 ;; And the body can be empty or any number of valid forms.
 (defn bodyo [f b]
-  (println :bodyo)
-  (m/conde
-   [(m/emptyo f) (m/emptyo b)]
-   [(m/fresh [f-h f-t b-h b-t]
-      (m/conso f-h f-t f)
-      (m/conso b-h b-t b)
-      (hiccupo f-h b-h)
-      (bodyo f-t b-t))]))
+  (m/all
+   (m/trace-lvars :bodyo f b)
+   (m/conde
+    [(m/emptyo f) (m/emptyo b)]
+    [(m/fresh [f-h f-t b-h b-t]
+       (m/conso f-h f-t f)
+       (m/conso b-h b-t b)
+       (hiccupo f-h b-h)
+       (bodyo f-t b-t))])))
 
 ;; In megadodo hiccup we ad an additional concept of a context.
 ;; This represents some data passed to the form to be rendered.
